@@ -40,5 +40,13 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
+# 127.0.0.1, não "localhost": nginx.conf é customizado (não o template padrão
+# da imagem), então o script 10-listen-on-ipv6-by-default.sh do entrypoint
+# pula o patch que adicionaria `listen [::]:80` — o nginx só escuta em IPv4.
+# Em Alpine/musl, "localhost" costuma resolver pra ::1 primeiro; o wget do
+# BusyBox tenta esse endereço, leva connection refused (nada escutando em
+# IPv6) e a checagem falha — 3 falhas seguidas e o Swarm mata a task
+# (SIGQUIT) achando o serviço unhealthy, mesmo o nginx estando perfeitamente
+# de pé em IPv4.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -q -O /dev/null http://localhost/ || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
