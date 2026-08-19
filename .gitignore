@@ -17,6 +17,11 @@ frontend/*.local
 # Deploy (docker compose / stack)
 .env
 
+# Deploy de produção (Swarm) — contém segredos reais em texto puro
+# (SECRET_KEY, credenciais SMTP, tokens do Mercado Pago, senha do admin).
+# NUNCA remover esta linha nem forçar `git add -f` dentro de DEPLOY/.
+DEPLOY/
+
 # Editor / OS
 .vscode/
 .idea/

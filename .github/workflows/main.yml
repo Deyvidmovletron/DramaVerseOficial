@@ -1,0 +1,89 @@
+name: Build & Publish images
+
+on:
+  push:
+    tags: ['*.*.*']   # ex.: 1.0.0
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ${{ github.repository_owner }}/dramaverse-backend
+  IMAGE_FRONTEND: ${{ github.repository_owner }}/dramaverse-frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- BACKEND ----------
+      - name: Metadata (backend)
+        id: meta_backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      # (opcional) debug para conferir paths no runner
+      - name: Debug paths (backend)
+        run: |
+          pwd
+          echo "== raiz =="; ls -la
+          echo "== backend =="; ls -la backend || true
+          [ -f backend/Dockerfile ] && echo "OK: backend/Dockerfile encontrado" || echo "ERRO: backend/Dockerfile não encontrado"
+
+      # Sem cache-from/cache-to de propósito: type=gha,mode=max derrubou o
+      # build inteiro em 2026-07-30 com "error writing layer blob: not_found"
+      # — a imagem já tinha sido publicada com sucesso, só a etapa AUXILIAR de
+      # salvar cache no Actions (compartilhado entre backend+frontend, limite
+      # de 10GB/repo) falhou, e o buildx trata as duas operações como uma coisa
+      # só, então o job inteiro voltava vermelho por causa de um passo que não
+      # afeta a imagem publicada. Build local aqui é ~30s — o cache não
+      # compensa esse risco.
+      - name: Build & Push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend              # 👈 contexto na pasta backend
+          file: ./backend/Dockerfile      # 👈 Dockerfile dentro de backend
+          push: true
+          tags: ${{ steps.meta_backend.outputs.tags }}
+          labels: ${{ steps.meta_backend.outputs.labels }}
+
+      # ---------- FRONTEND ----------
+      - name: Metadata (frontend)
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      # Ver o comentário no step do backend acima — mesmo motivo.
+      - name: Build & Push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
