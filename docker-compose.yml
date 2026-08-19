@@ -1,0 +1,48 @@
+# Stack completa: backend (FastAPI) + frontend (React servido via Nginx, que também
+# faz proxy de /api e /media para o backend — por isso o navegador nunca precisa de CORS).
+#
+# Uso local/servidor único:
+#   docker compose up -d --build
+#
+# Uso via `docker stack deploy` (Swarm): o Swarm não suporta a chave `build:`, então
+# antes é preciso gerar e publicar as imagens (ex: `docker compose build && docker compose push`,
+# com um registry configurado) e trocar `build: ...` por `image: ghcr.io/gahvaleriods/stream-backend:tag`
+# (e o mesmo para o frontend) neste arquivo antes de rodar `docker stack deploy -c docker-compose.yml stream`.
+#
+# Antes de subir em produção: edite backend/.env e troque SECRET_KEY e
+# FIRST_ADMIN_PASSWORD pelos valores reais (nunca use os padrões de desenvolvimento).
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - backend_data:/app/data
+      - backend_media:/app/media
+    expose:
+      - "8000"
+    # Sem healthcheck: aqui de propósito — usa o HEALTHCHECK já declarado no
+    # backend/Dockerfile. Um bloco healthcheck: neste arquivo SUBSTITUIRIA o da
+    # imagem inteiramente; duplicar o comando nos dois lugares é receita pra um
+    # dos dois ficar defasado (ex: o Dockerfile parar de instalar curl e esse
+    # bloco continuar chamando `curl`, quebrando o healthcheck em silêncio).
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Chave pública do Mercado Pago — embutida no bundle estático em tempo de
+        # build (Vite), por isso vem como build arg em vez de env de runtime do
+        # container. Lida do .env na raiz do projeto (não o backend/.env).
+        VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  backend_data:
+  backend_media:

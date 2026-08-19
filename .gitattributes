@@ -1,0 +1,6 @@
+# Normaliza pra LF no repositório e no checkout, independente do core.autocrlf
+# de quem clona (esta máquina tem autocrlf=true). Importante especialmente pra
+# docker-entrypoint.sh: um shebang com CRLF (#!/bin/sh\r) quebra a interpretação
+# do script dentro do container Linux ("bad interpreter").
+* text=auto eol=lf
+*.sh text eol=lf

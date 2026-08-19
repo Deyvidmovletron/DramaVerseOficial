@@ -1,0 +1,24 @@
+# Backend (Python)
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.egg-info/
+backend/.env
+backend/data/
+backend/media/**/*
+!backend/media/**/.gitkeep
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/*.local
+
+# Deploy (docker compose / stack)
+.env
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
