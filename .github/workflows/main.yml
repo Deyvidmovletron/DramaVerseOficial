@@ -85,5 +85,11 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          # Não é segredo (ver comentário em frontend/.env.example) — precisa
+          # existir como Variable (não Secret) do repo em Settings > Secrets
+          # and variables > Actions > Variables, senão o Vite embute uma
+          # chave vazia no bundle em produção.
+          build-args: |
+            VITE_MERCADOPAGO_PUBLIC_KEY=${{ vars.VITE_MERCADOPAGO_PUBLIC_KEY }}
           tags: ${{ steps.meta_frontend.outputs.tags }}
           labels: ${{ steps.meta_frontend.outputs.labels }}
