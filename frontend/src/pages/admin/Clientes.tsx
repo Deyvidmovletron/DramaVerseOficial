@@ -1,13 +1,15 @@
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Trash2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { ClienteDetalhesModal } from "@/components/admin/ClienteDetalhesModal";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { Pagination } from "@/components/ui/Pagination";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import {
   useAtribuirAssinatura,
   useClientesAdmin,
   useCreateClienteAdmin,
+  useDeleteClienteAdmin,
   useUpdateClienteAdmin,
 } from "@/hooks/useClientesAdmin";
 import { usePlanos } from "@/hooks/usePlanos";
@@ -18,7 +20,7 @@ function formatarData(iso: string | null): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-const FORM_VAZIO = { nome: "", email: "", senha: "", plano_id: "" };
+const FORM_VAZIO = { nome: "", email: "", telefone: "", senha: "", plano_id: "" };
 
 export function Clientes() {
   const [busca, setBusca] = useState("");
@@ -28,7 +30,9 @@ export function Clientes() {
   const { data: planos } = usePlanos();
   const criar = useCreateClienteAdmin();
   const atualizar = useUpdateClienteAdmin();
+  const excluir = useDeleteClienteAdmin();
   const atribuirAssinatura = useAtribuirAssinatura();
+  const { confirmar, alertar } = useConfirm();
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [form, setForm] = useState(FORM_VAZIO);
@@ -45,6 +49,7 @@ export function Clientes() {
       await criar.mutateAsync({
         nome: form.nome,
         email: form.email,
+        telefone: form.telefone || null,
         senha: form.senha,
         plano_id: form.plano_id ? Number(form.plano_id) : null,
       });
@@ -55,12 +60,28 @@ export function Clientes() {
     }
   }
 
+  async function handleExcluir(cliente: ClienteAdmin) {
+    const ok = await confirmar({
+      message: `Excluir o cliente "${cliente.nome}"? Isso apaga em definitivo a conta, a assinatura, os pagamentos, o progresso e a lista dele. Não dá pra desfazer.`,
+      danger: true,
+      confirmLabel: "Excluir cliente",
+    });
+    if (!ok) return;
+    try {
+      await excluir.mutateAsync(cliente.id);
+      if (clienteDetalhes?.id === cliente.id) setClienteDetalhes(null);
+    } catch {
+      await alertar("Não foi possível excluir o cliente. Tente novamente.");
+    }
+  }
+
   async function toggleBloqueio(cliente: ClienteAdmin) {
     await atualizar.mutateAsync({
       id: cliente.id,
       data: {
         nome: cliente.nome,
         email: cliente.email,
+        telefone: cliente.telefone,
         status: cliente.status === "ativo" ? "bloqueado" : "ativo",
       },
     });
@@ -132,6 +153,13 @@ export function Clientes() {
             className="rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
           />
           <input
+            type="tel"
+            placeholder="Telefone (opcional)"
+            value={form.telefone}
+            onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))}
+            className="rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
             required
             type="password"
             placeholder="Senha"
@@ -196,7 +224,9 @@ export function Clientes() {
                         className={`rounded px-2 py-0.5 text-xs ${
                           cliente.assinatura_status === "ativa"
                             ? "bg-green-500/20 text-green-300"
-                            : "bg-yellow-500/20 text-yellow-300"
+                            : cliente.assinatura_status === "teste"
+                              ? "bg-blue-500/20 text-blue-300"
+                              : "bg-yellow-500/20 text-yellow-300"
                         }`}
                       >
                         {cliente.assinatura_status}
@@ -254,13 +284,23 @@ export function Clientes() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => setClienteDetalhes(cliente)}
-                      className="flex items-center gap-1 text-white/50 hover:text-white"
-                      title="Detalhes e assinaturas"
-                    >
-                      <Settings size={16} />
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => setClienteDetalhes(cliente)}
+                        className="text-white/50 hover:text-white"
+                        title="Detalhes e assinaturas"
+                      >
+                        <Settings size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleExcluir(cliente)}
+                        disabled={excluir.isPending}
+                        className="text-white/50 hover:text-red-400 disabled:opacity-40"
+                        title="Excluir cliente"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

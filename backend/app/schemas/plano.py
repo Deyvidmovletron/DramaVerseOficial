@@ -8,6 +8,8 @@ class PlanoBase(BaseModel):
     descricao: str | None = None
     preco_centavos: int = Field(ge=0)
     duracao_dias: int = Field(ge=1, default=30)
+    periodo_teste_dias: int = Field(ge=0, default=0)
+    destaque: bool = False
     ativo: bool = True
 
 

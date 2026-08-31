@@ -81,6 +81,8 @@ export interface PlanoPublico {
   descricao: string | null;
   preco_centavos: number;
   duracao_dias: number;
+  periodo_teste_dias: number;
+  destaque: boolean;
 }
 
 export interface CheckoutCartaoResultado {

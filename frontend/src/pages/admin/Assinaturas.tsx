@@ -14,10 +14,11 @@ import {
 } from "@/hooks/useAssinaturasAdmin";
 import type { AssinaturaAdmin, StatusAssinaturaAdmin } from "@/types/admin";
 
-const STATUS_OPCOES: StatusAssinaturaAdmin[] = ["pendente", "ativa", "atrasada", "cancelada"];
+const STATUS_OPCOES: StatusAssinaturaAdmin[] = ["pendente", "teste", "ativa", "atrasada", "cancelada"];
 
 const STATUS_ESTILO: Record<StatusAssinaturaAdmin, string> = {
   ativa: "bg-green-500/20 text-green-300",
+  teste: "bg-blue-500/20 text-blue-300",
   pendente: "bg-white/10 text-white/60",
   atrasada: "bg-yellow-500/20 text-yellow-300",
   cancelada: "bg-red-500/20 text-red-300",

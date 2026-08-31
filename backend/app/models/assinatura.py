@@ -9,6 +9,7 @@ from app.db.base import Base
 
 class StatusAssinatura(str, enum.Enum):
     pendente = "pendente"
+    teste = "teste"  # em período de teste grátis: acesso liberado, ainda não cobrado
     ativa = "ativa"
     atrasada = "atrasada"
     cancelada = "cancelada"

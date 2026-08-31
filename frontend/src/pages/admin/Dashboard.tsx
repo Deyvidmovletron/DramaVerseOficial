@@ -4,6 +4,7 @@ import {
   Film,
   ListVideo,
   ShieldOff,
+  Sparkles,
   UserCheck,
   Users,
   Wallet,
@@ -48,7 +49,7 @@ function MetricCard({ label, value, icon: Icon, tone = "default" }: CardProps) {
 function DashboardSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 9 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 rounded border border-white/10 bg-black/30 p-5">
           <Skeleton className="h-12 w-12 rounded-full" />
           <div className="flex-1 space-y-2">
@@ -75,6 +76,7 @@ export function AdminDashboard() {
           <MetricCard label="Receita do mês" value={centavosParaReais(data.receita_mes_centavos)} icon={Wallet} tone="green" />
           <MetricCard label="Novas assinaturas (mês)" value={data.novas_assinaturas_mes} icon={CreditCard} />
           <MetricCard label="Assinaturas ativas" value={data.assinaturas_ativas} icon={UserCheck} tone="green" />
+          <MetricCard label="Em teste grátis" value={data.assinaturas_teste} icon={Sparkles} />
           <MetricCard label="Assinaturas atrasadas" value={data.assinaturas_atrasadas} icon={AlertTriangle} tone="yellow" />
           <MetricCard label="Total de clientes" value={data.total_clientes} icon={Users} />
           <MetricCard label="Clientes com conta bloqueada" value={data.clientes_bloqueados} icon={ShieldOff} tone="red" />

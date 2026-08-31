@@ -12,6 +12,7 @@ class ClienteAdminOut(BaseModel):
     id: int
     nome: str
     email: str
+    telefone: str | None
     status: StatusCliente
     criado_em: datetime
     plano_atual_id: int | None
@@ -23,6 +24,7 @@ class ClienteAdminOut(BaseModel):
 class ClienteCreateIn(BaseModel):
     nome: str = Field(min_length=1, max_length=120)
     email: EmailStr
+    telefone: str | None = Field(default=None, max_length=20)
     senha: str = Field(min_length=6)
     plano_id: int | None = None
 
@@ -30,6 +32,7 @@ class ClienteCreateIn(BaseModel):
 class ClienteUpdateIn(BaseModel):
     nome: str = Field(min_length=1, max_length=120)
     email: EmailStr
+    telefone: str | None = Field(default=None, max_length=20)
     status: StatusCliente
 
 

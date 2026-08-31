@@ -37,7 +37,7 @@ export function ClienteLayout() {
         <div className="flex items-center justify-between px-4 py-3 md:px-12">
           <div className="flex items-center gap-6">
             <Link to="/" className="text-2xl font-bold tracking-tight text-brand" onClick={fecharMenu}>
-              STREAM+
+              Drama Verse Oficial
             </Link>
             <Link to="/minha-lista" className="hidden text-sm text-white/80 hover:text-white sm:inline">
               Minha Lista

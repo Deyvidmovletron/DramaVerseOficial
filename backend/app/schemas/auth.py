@@ -1,9 +1,23 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class LoginIn(BaseModel):
     email: EmailStr
     senha: str
+
+
+class RegistroClienteIn(BaseModel):
+    nome: str = Field(min_length=1, max_length=120)
+    email: EmailStr
+    telefone: str = Field(min_length=8, max_length=20)
+    senha: str = Field(min_length=6)
+    senha_confirmacao: str
+
+    @model_validator(mode="after")
+    def _senhas_conferem(self) -> "RegistroClienteIn":
+        if self.senha != self.senha_confirmacao:
+            raise ValueError("As senhas não coincidem")
+        return self
 
 
 class TokenOut(BaseModel):

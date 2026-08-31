@@ -89,7 +89,13 @@ export function Login() {
         </button>
 
         <p className="mt-6 text-sm text-white/50">
-          Acesso restrito a assinantes. Problemas para entrar? Fale com o suporte.
+          Ainda não tem conta?{" "}
+          <Link to="/registro" className="text-white hover:underline">
+            Cadastre-se
+          </Link>
+        </p>
+        <p className="mt-2 text-xs text-white/40">
+          Problemas para entrar? Fale com o suporte.
         </p>
       </form>
     </div>

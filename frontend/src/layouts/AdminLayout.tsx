@@ -24,7 +24,7 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-full bg-surface text-white">
       <aside className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-black/40 p-4">
-        <span className="mb-6 text-xl font-bold text-brand">STREAM+ Admin</span>
+        <span className="mb-6 text-xl font-bold text-brand">Drama Verse Oficial Admin</span>
 
         <nav className="flex-1 space-y-1">
           {navItems.map(({ to, label, icon: Icon, end }) => (

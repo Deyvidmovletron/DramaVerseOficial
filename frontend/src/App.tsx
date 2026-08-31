@@ -26,6 +26,7 @@ import { EsqueciSenha } from "@/pages/cliente/EsqueciSenha";
 import { Home } from "@/pages/cliente/Home";
 import { Login } from "@/pages/cliente/Login";
 import { MinhaConta } from "@/pages/cliente/MinhaConta";
+import { Registro } from "@/pages/cliente/Registro";
 import { MinhaLista } from "@/pages/cliente/MinhaLista";
 import { RedefinirSenha } from "@/pages/cliente/RedefinirSenha";
 import { SerieDetalhes } from "@/pages/cliente/SerieDetalhes";
@@ -38,6 +39,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/registro" element={<Registro />} />
       <Route path="/esqueci-senha" element={<EsqueciSenha />} />
       <Route path="/redefinir-senha" element={<RedefinirSenha />} />
       <Route

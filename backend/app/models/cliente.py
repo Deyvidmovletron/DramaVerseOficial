@@ -18,6 +18,7 @@ class Cliente(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    telefone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     senha_hash: Mapped[str] = mapped_column(String(255))
     status: Mapped[StatusCliente] = mapped_column(Enum(StatusCliente), default=StatusCliente.ativo, index=True)
     # Incrementado a cada logout/redefinição de senha/bloqueio para invalidar de uma vez

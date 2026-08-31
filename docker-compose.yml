@@ -6,8 +6,8 @@
 #
 # Uso via `docker stack deploy` (Swarm): o Swarm não suporta a chave `build:`, então
 # antes é preciso gerar e publicar as imagens (ex: `docker compose build && docker compose push`,
-# com um registry configurado) e trocar `build: ...` por `image: ghcr.io/gahvaleriods/stream-backend:tag`
-# (e o mesmo para o frontend) neste arquivo antes de rodar `docker stack deploy -c docker-compose.yml stream`.
+# com um registry configurado) e trocar `build: ...` por `image: ghcr.io/<owner>/dramaverse-backend:tag`
+# (e o mesmo para o frontend) neste arquivo antes de rodar `docker stack deploy -c docker-compose.yml dramaverse`.
 #
 # Antes de subir em produção: edite backend/.env e troque SECRET_KEY e
 # FIRST_ADMIN_PASSWORD pelos valores reais (nunca use os padrões de desenvolvimento).

@@ -11,6 +11,15 @@ class CheckoutOut(BaseModel):
     checkout_url: str
 
 
+class IniciarTesteIn(BaseModel):
+    plano_id: int
+
+
+class IniciarTesteOut(BaseModel):
+    status: str  # sempre "teste"
+    data_expiracao: datetime | None = None
+
+
 class CheckoutCartaoIn(BaseModel):
     plano_id: int
     card_token_id: str

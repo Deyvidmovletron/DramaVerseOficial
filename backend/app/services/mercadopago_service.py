@@ -27,14 +27,13 @@ def criar_preapproval(
     cliente_email: str,
     plano_nome: str,
     valor_reais: float,
-    frequencia_dias: int,
     external_reference: str,
     card_token_id: str | None = None,
     payer_first_name: str | None = None,
     payer_last_name: str | None = None,
     cpf: str | None = None,
 ) -> dict:
-    """Cria uma assinatura recorrente (preapproval) no Mercado Pago.
+    """Cria uma assinatura recorrente (preapproval) no Mercado Pago — cobrança MENSAL.
 
     Sem `card_token_id`: fluxo legado — a preapproval nasce "pending" e o retorno traz
     `init_point`, a URL do checkout hospedado pelo Mercado Pago (usuário é redirecionado).
@@ -48,8 +47,8 @@ def criar_preapproval(
         "external_reference": external_reference,
         "payer_email": cliente_email,
         "auto_recurring": {
-            "frequency": frequencia_dias,
-            "frequency_type": "days",
+            "frequency": 1,
+            "frequency_type": "months",
             "transaction_amount": valor_reais,
             "currency_id": "BRL",
         },
@@ -88,6 +87,41 @@ def buscar_preapproval(preapproval_id: str) -> dict:
     return resultado["response"]
 
 
+def cancelar_preapproval(preapproval_id: str) -> None:
+    """Cancela uma assinatura recorrente no Mercado Pago (usado ao trocar de plano ou de
+    método de pagamento, para não deixar duas cobranças recorrentes ativas)."""
+    sdk = _sdk()
+    resultado = sdk.preapproval().update(preapproval_id, {"status": "cancelled"})
+    if resultado.get("status") not in (200, 201):
+        raise MercadoPagoError(f"Erro ao cancelar assinatura no Mercado Pago: {resultado.get('response')}")
+
+
+def buscar_invoice(invoice_id: str) -> dict:
+    """Consulta uma 'invoice'/authorized_payment de assinatura recorrente — o recurso
+    referenciado pelo webhook `subscription_authorized_payment` (a cobrança mensal
+    gerada pelo Mercado Pago a partir da preapproval)."""
+    sdk = _sdk()
+    resultado = sdk.invoice().get(invoice_id)
+    if resultado.get("status") != 200:
+        raise MercadoPagoError(f"Erro ao consultar invoice no Mercado Pago: {resultado.get('response')}")
+    return resultado["response"]
+
+
+def buscar_ultima_invoice_aprovada(preapproval_id: str) -> dict | None:
+    """Entre as cobranças (invoices) de uma preapproval, retorna a mais recente cujo
+    pagamento foi aprovado — usado na reconciliação (rede de segurança para webhooks)."""
+    sdk = _sdk()
+    resultado = sdk.invoice().search(
+        {"preapproval_id": preapproval_id, "sort": "date_created", "criteria": "desc"}
+    )
+    if resultado.get("status") != 200:
+        raise MercadoPagoError(f"Erro ao consultar invoices no Mercado Pago: {resultado.get('response')}")
+    for inv in resultado["response"].get("results", []):
+        if (inv.get("payment") or {}).get("status") == "approved" or inv.get("status") == "processed":
+            return inv
+    return None
+
+
 def buscar_payment(payment_id: str) -> dict:
     sdk = _sdk()
     resultado = sdk.payment().get(payment_id)
@@ -108,7 +142,12 @@ def buscar_payment_aprovado_por_referencia(external_reference: str) -> dict | No
 
 
 def criar_pagamento_pix(
-    *, cliente_email: str, plano_nome: str, valor_reais: float, external_reference: str
+    *,
+    cliente_email: str,
+    plano_nome: str,
+    valor_reais: float,
+    external_reference: str,
+    telefone: str | None = None,
 ) -> dict:
     """Cria um pagamento avulso via PIX — usado pra ativar/renovar uma assinatura por um
     período: sem cobrança automática recorrente (PIX não tem esse conceito no Mercado
@@ -117,11 +156,15 @@ def criar_pagamento_pix(
     # Mercado Pago (aplicada a todos os eventos da aplicação) — mesmo padrão já usado
     # pelas preapprovals deste projeto, que também não passam esse campo por request.
     sdk = _sdk()
+    payer: dict = {"email": cliente_email}
+    telefone_digitos = re.sub(r"\D", "", telefone or "")
+    if len(telefone_digitos) >= 10:
+        payer["phone"] = {"area_code": telefone_digitos[:2], "number": telefone_digitos[2:]}
     payload = {
         "transaction_amount": valor_reais,
         "description": f"Assinatura {plano_nome}",
         "payment_method_id": "pix",
-        "payer": {"email": cliente_email},
+        "payer": payer,
         "external_reference": external_reference,
     }
     resultado = sdk.payment().create(payload)

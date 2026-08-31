@@ -103,6 +103,8 @@ export interface Plano {
   descricao: string | null;
   preco_centavos: number;
   duracao_dias: number;
+  periodo_teste_dias: number;
+  destaque: boolean;
   ativo: boolean;
   criado_em: string;
 }
@@ -112,6 +114,8 @@ export interface PlanoInput {
   descricao: string | null;
   preco_centavos: number;
   duracao_dias: number;
+  periodo_teste_dias: number;
+  destaque: boolean;
   ativo: boolean;
 }
 
@@ -121,6 +125,7 @@ export interface ClienteAdmin {
   id: number;
   nome: string;
   email: string;
+  telefone: string | null;
   status: StatusClienteConta;
   criado_em: string;
   plano_atual_id: number | null;
@@ -132,6 +137,7 @@ export interface ClienteAdmin {
 export interface ClienteCreateInput {
   nome: string;
   email: string;
+  telefone: string | null;
   senha: string;
   plano_id: number | null;
 }
@@ -139,10 +145,11 @@ export interface ClienteCreateInput {
 export interface ClienteUpdateInput {
   nome: string;
   email: string;
+  telefone: string | null;
   status: StatusClienteConta;
 }
 
-export type StatusAssinaturaAdmin = "pendente" | "ativa" | "atrasada" | "cancelada";
+export type StatusAssinaturaAdmin = "pendente" | "teste" | "ativa" | "atrasada" | "cancelada";
 
 export interface AssinaturaAdmin {
   id: number;

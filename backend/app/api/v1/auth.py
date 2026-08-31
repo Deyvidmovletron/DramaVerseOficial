@@ -17,7 +17,15 @@ from app.core.security import (
 from app.models.admin import Admin
 from app.models.cliente import Cliente
 from app.schemas.admin import AdminOut
-from app.schemas.auth import AtualizarPerfilIn, EsqueciSenhaIn, LoginIn, RedefinirSenhaIn, TokenOut, TrocarSenhaIn
+from app.schemas.auth import (
+    AtualizarPerfilIn,
+    EsqueciSenhaIn,
+    LoginIn,
+    RedefinirSenhaIn,
+    RegistroClienteIn,
+    TokenOut,
+    TrocarSenhaIn,
+)
 from app.schemas.cliente import AssinaturaResumoOut, ClienteMeOut
 from app.services.assinatura_service import assinatura_vigente
 from app.services.email_service import enviar_email
@@ -84,8 +92,8 @@ def _esqueci_senha(db: Session, model: type[Admin] | type[Cliente], user_type: s
         link = f"{settings.frontend_url}{link_path}?token={token}"
         enviar_email(
             user.email,
-            "Redefinição de senha",
-            f"Olá, {user.nome}!\n\nUse o link abaixo para redefinir sua senha (válido por um tempo limitado):\n{link}\n\nSe você não pediu isso, ignore este e-mail.",
+            "Drama Verse Oficial — Redefinição de senha",
+            f"Olá, {user.nome}!\n\nUse o link abaixo para redefinir sua senha na Drama Verse Oficial (válido por um tempo limitado):\n{link}\n\nSe você não pediu isso, ignore este e-mail.",
         )
     # Sempre a mesma resposta, tenha o e-mail sido encontrado ou não — evita que alguém
     # descubra quais e-mails estão cadastrados testando o formulário.
@@ -112,6 +120,34 @@ def _redefinir_senha(db: Session, model: type[Admin] | type[Cliente], user_type:
 
 
 # --- Cliente ---------------------------------------------------------------
+
+
+@router.post("/cliente/registro", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
+def registrar_cliente(
+    data: RegistroClienteIn, request: Request, response: Response, db: Session = Depends(get_db)
+) -> TokenOut:
+    """Auto-cadastro público de cliente. Cria a conta (status ativo, sem assinatura) e já
+    devolve os tokens (login automático) — o cliente segue para o passo de pagamento
+    logado. A assinatura/teste grátis é criada depois, pelo checkout."""
+    checar_rate_limit_login(request, f"registro:{data.email}")
+
+    cliente = Cliente(
+        nome=data.nome,
+        email=data.email,
+        telefone=data.telefone,
+        senha_hash=hash_password(data.senha),
+    )
+    db.add(cliente)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        registrar_falha_login(request, f"registro:{data.email}")
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="Já existe uma conta com esse e-mail") from exc
+
+    limpar_tentativas_login(request, f"registro:{data.email}")
+    db.refresh(cliente)
+    return _tokens_for(response, cliente, "cliente")
 
 
 @router.post("/cliente/login", response_model=TokenOut)
@@ -194,17 +230,22 @@ def logout_todos_cliente(
 
 @router.get("/cliente/me", response_model=ClienteMeOut)
 def me_cliente(cliente: Cliente = Depends(get_current_cliente)) -> ClienteMeOut:
-    assinatura = assinatura_vigente(cliente)
+    vigente = assinatura_vigente(cliente)
+    # `status`/`data_expiracao` refletem a assinatura BRUTA do cliente (mesmo expirada/
+    # atrasada) — `status is None` só quando o cliente nunca teve assinatura, que é
+    # exatamente a condição de elegibilidade do teste grátis. `ativa` diz se está vigente.
+    assinatura_atual = cliente.assinatura
     return ClienteMeOut(
         id=cliente.id,
         nome=cliente.nome,
         email=cliente.email,
+        telefone=cliente.telefone,
         status=cliente.status,
         criado_em=cliente.criado_em,
         assinatura=AssinaturaResumoOut(
-            ativa=assinatura is not None,
-            status=assinatura.status.value if assinatura else None,
-            data_expiracao=assinatura.data_expiracao if assinatura else None,
+            ativa=vigente is not None,
+            status=assinatura_atual.status.value if assinatura_atual else None,
+            data_expiracao=assinatura_atual.data_expiracao if assinatura_atual else None,
         ),
     )
 

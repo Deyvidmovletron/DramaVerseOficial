@@ -46,7 +46,12 @@ export function useDeleteClienteAdmin() {
     mutationFn: async (id: number) => {
       await adminApi.delete(`/admin/clientes/${id}`);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-clientes"] }),
+    onSuccess: () => {
+      // Apagar o cliente remove em cascata assinatura, pagamentos, progresso e minha lista.
+      qc.invalidateQueries({ queryKey: ["admin-clientes"] });
+      qc.invalidateQueries({ queryKey: ["admin-assinaturas"] });
+      qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
+    },
   });
 }
 

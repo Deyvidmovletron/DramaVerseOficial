@@ -11,8 +11,12 @@ const FORM_VAZIO: PlanoInput = {
   descricao: "",
   preco_centavos: 0,
   duracao_dias: 30,
+  periodo_teste_dias: 0,
+  destaque: false,
   ativo: true,
 };
+
+const TESTE_PRESETS = [0, 1, 3, 7, 15, 30];
 
 function centavosParaReais(centavos: number): string {
   return (centavos / 100).toFixed(2);
@@ -46,6 +50,8 @@ export function Planos() {
       descricao: plano.descricao ?? "",
       preco_centavos: plano.preco_centavos,
       duracao_dias: plano.duracao_dias,
+      periodo_teste_dias: plano.periodo_teste_dias,
+      destaque: plano.destaque,
       ativo: plano.ativo,
     });
     setPrecoReais(centavosParaReais(plano.preco_centavos));
@@ -145,6 +151,38 @@ export function Planos() {
               </select>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm text-white/70">Teste grátis (dias)</label>
+              <input
+                required
+                type="number"
+                min="0"
+                list="teste-presets"
+                value={form.periodo_teste_dias}
+                onChange={(e) => setForm((f) => ({ ...f, periodo_teste_dias: Math.max(0, Number(e.target.value)) }))}
+                className="w-full rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+              <datalist id="teste-presets">
+                {TESTE_PRESETS.map((d) => (
+                  <option key={d} value={d} />
+                ))}
+              </datalist>
+              <p className="mt-1 text-xs text-white/40">0 = sem teste. O cliente cadastra o cartão e só é cobrado ao fim do teste.</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-white/70">Destaque</label>
+              <select
+                value={form.destaque ? "1" : "0"}
+                onChange={(e) => setForm((f) => ({ ...f, destaque: e.target.value === "1" }))}
+                className="w-full rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
+              >
+                <option value="0">Normal</option>
+                <option value="1">Plano recomendado</option>
+              </select>
+              <p className="mt-1 text-xs text-white/40">Destaca este plano nos layouts de 2 e 3 planos no cadastro.</p>
+            </div>
+          </div>
           <div className="flex gap-3 pt-1">
             <button
               type="submit"
@@ -170,20 +208,29 @@ export function Planos() {
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Preço</th>
                 <th className="px-4 py-3">Duração</th>
+                <th className="px-4 py-3">Teste grátis</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {isLoading ? (
-                <TableSkeleton rows={4} cols={5} />
+                <TableSkeleton rows={4} cols={6} />
               ) : (
                 <>
                   {planos?.map((plano) => (
                     <tr key={plano.id} className="hover:bg-white/5">
-                      <td className="px-4 py-3 font-medium">{plano.nome}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {plano.nome}
+                        {plano.destaque && (
+                          <span className="ml-2 rounded bg-brand/20 px-1.5 py-0.5 text-xs text-brand">destaque</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-white/70">R$ {centavosParaReais(plano.preco_centavos)}</td>
                       <td className="px-4 py-3 text-white/70">{plano.duracao_dias} dias</td>
+                      <td className="px-4 py-3 text-white/70">
+                        {plano.periodo_teste_dias > 0 ? `${plano.periodo_teste_dias} dias` : "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded px-2 py-0.5 text-xs ${
@@ -207,7 +254,7 @@ export function Planos() {
                   ))}
                   {planos?.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-white/50">
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/50">
                         Nenhum plano cadastrado.
                       </td>
                     </tr>

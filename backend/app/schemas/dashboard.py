@@ -8,6 +8,7 @@ class DashboardOut(BaseModel):
     total_series: int
     total_episodios: int
     assinaturas_ativas: int
+    assinaturas_teste: int
     assinaturas_atrasadas: int
     novas_assinaturas_mes: int
     receita_mes_centavos: int

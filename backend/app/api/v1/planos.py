@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin, get_current_cliente, get_db
+from app.api.deps import get_current_admin, get_db
 from app.models.admin import Admin
 from app.models.assinatura import Assinatura
-from app.models.cliente import Cliente
 from app.models.plano import Plano
 from app.schemas.plano import PlanoCreate, PlanoOut, PlanoUpdate
 
@@ -24,10 +23,9 @@ def listar_planos(db: Session = Depends(get_db), _admin: Admin = Depends(get_cur
 
 
 @router.get("/publicos", response_model=list[PlanoOut])
-def listar_planos_publicos(
-    db: Session = Depends(get_db), _cliente: Cliente = Depends(get_current_cliente)
-) -> list[Plano]:
-    """Planos ativos disponíveis para o cliente assinar (não requer assinatura ativa)."""
+def listar_planos_publicos(db: Session = Depends(get_db)) -> list[Plano]:
+    """Planos ativos disponíveis para assinar. Rota aberta (sem login) — a tela pública
+    de cadastro (/registro) precisa listar os planos antes de a conta existir."""
     return db.query(Plano).filter(Plano.ativo.is_(True)).order_by(Plano.preco_centavos).all()
 
 

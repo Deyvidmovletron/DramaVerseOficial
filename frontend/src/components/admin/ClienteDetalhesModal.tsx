@@ -4,10 +4,17 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useAssinaturaCliente, useUpdateAssinaturaCliente, useUpdateClienteAdmin } from "@/hooks/useClientesAdmin";
 import type { ClienteAdmin, StatusAssinaturaAdmin } from "@/types/admin";
 
-const STATUS_ASSINATURA_OPCOES: StatusAssinaturaAdmin[] = ["pendente", "ativa", "atrasada", "cancelada"];
+const STATUS_ASSINATURA_OPCOES: StatusAssinaturaAdmin[] = [
+  "pendente",
+  "teste",
+  "ativa",
+  "atrasada",
+  "cancelada",
+];
 
 const STATUS_ASSINATURA_ESTILO: Record<StatusAssinaturaAdmin, string> = {
   ativa: "bg-green-500/20 text-green-300",
+  teste: "bg-blue-500/20 text-blue-300",
   pendente: "bg-white/10 text-white/60",
   atrasada: "bg-yellow-500/20 text-yellow-300",
   cancelada: "bg-red-500/20 text-red-300",
@@ -85,6 +92,7 @@ function AbaDados({ cliente }: { cliente: ClienteAdmin }) {
   const atualizar = useUpdateClienteAdmin();
   const [nome, setNome] = useState(cliente.nome);
   const [email, setEmail] = useState(cliente.email);
+  const [telefone, setTelefone] = useState(cliente.telefone ?? "");
   const [statusConta, setStatusConta] = useState(cliente.status);
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
@@ -94,7 +102,10 @@ function AbaDados({ cliente }: { cliente: ClienteAdmin }) {
     setErro(null);
     setSalvo(false);
     try {
-      await atualizar.mutateAsync({ id: cliente.id, data: { nome, email, status: statusConta } });
+      await atualizar.mutateAsync({
+        id: cliente.id,
+        data: { nome, email, telefone: telefone || null, status: statusConta },
+      });
       setSalvo(true);
     } catch {
       setErro("Não foi possível salvar (e-mail já usado por outro cliente?).");
@@ -123,6 +134,16 @@ function AbaDados({ cliente }: { cliente: ClienteAdmin }) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs text-white/60">Telefone</label>
+        <input
+          type="tel"
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
           className="w-full rounded border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-brand"
         />
       </div>

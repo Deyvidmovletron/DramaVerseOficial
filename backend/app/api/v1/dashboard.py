@@ -36,13 +36,17 @@ def obter_dashboard(db: Session = Depends(get_db), _admin: Admin = Depends(get_c
     # vez de confiar cegamente na coluna `status` (que só é corrigida por um scheduler que
     # roda a cada 24h, ver core/scheduler.py).
     assinaturas_ativas = 0
+    assinaturas_teste = 0
     assinaturas_atrasadas = 0
     for cliente in clientes:
         if cliente.assinatura is None:
             continue
         if assinatura_vigente(cliente) is not None:
-            assinaturas_ativas += 1
-        elif cliente.assinatura.status in (StatusAssinatura.ativa, StatusAssinatura.atrasada):
+            if cliente.assinatura.status == StatusAssinatura.teste:
+                assinaturas_teste += 1
+            else:
+                assinaturas_ativas += 1
+        elif cliente.assinatura.status in (StatusAssinatura.ativa, StatusAssinatura.teste, StatusAssinatura.atrasada):
             # Tinha assinatura ativa/atrasada mas não é mais vigente (expirou, e o
             # scheduler ainda não passou por ela, ou expirou "atrasada" mesmo).
             assinaturas_atrasadas += 1
@@ -64,6 +68,7 @@ def obter_dashboard(db: Session = Depends(get_db), _admin: Admin = Depends(get_c
         total_series=total_series,
         total_episodios=total_episodios,
         assinaturas_ativas=assinaturas_ativas,
+        assinaturas_teste=assinaturas_teste,
         assinaturas_atrasadas=assinaturas_atrasadas,
         novas_assinaturas_mes=novas_assinaturas_mes,
         receita_mes_centavos=int(receita_mes or 0),

@@ -10,7 +10,12 @@ from app.api.deps import get_db
 from app.core.config import settings
 from app.models.assinatura import Assinatura, StatusAssinatura
 from app.services.assinatura_service import registrar_pagamento
-from app.services.mercadopago_service import MercadoPagoError, buscar_payment, buscar_preapproval
+from app.services.mercadopago_service import (
+    MercadoPagoError,
+    buscar_invoice,
+    buscar_payment,
+    buscar_preapproval,
+)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -53,13 +58,40 @@ def _processar_preapproval(db: Session, preapproval_id: str) -> None:
         assinatura.status = StatusAssinatura.ativa
         if assinatura.data_inicio is None:
             assinatura.data_inicio = agora
-        assinatura.data_expiracao = agora + timedelta(days=assinatura.plano.duracao_dias)
+        # Só concede acesso provisório se ainda não há validade futura — a data exata vem
+        # do webhook do pagamento (registrar_pagamento). Cobrança do cartão é mensal.
+        expiracao = assinatura.data_expiracao
+        if expiracao is not None and expiracao.tzinfo is None:
+            expiracao = expiracao.replace(tzinfo=timezone.utc)
+        if expiracao is None or expiracao <= agora:
+            assinatura.data_expiracao = agora + timedelta(days=30)
     elif status_mp == "cancelled":
         assinatura.status = StatusAssinatura.cancelada
     elif status_mp == "paused":
         assinatura.status = StatusAssinatura.atrasada
 
     db.commit()
+
+
+def _assinatura_do_payment(db: Session, payment: dict) -> Assinatura | None:
+    external_reference = payment.get("external_reference")
+    if external_reference is not None:
+        try:
+            ref_id = int(external_reference)
+        except (TypeError, ValueError):
+            ref_id = None
+        if ref_id is not None:
+            assinatura = db.query(Assinatura).filter(Assinatura.id == ref_id).first()
+            if assinatura is not None:
+                return assinatura
+
+    preapproval_id = (
+        payment.get("preapproval_id") or (payment.get("metadata") or {}).get("preapproval_id")
+    )
+    if preapproval_id:
+        return db.query(Assinatura).filter(Assinatura.mp_subscription_id == str(preapproval_id)).first()
+
+    return None
 
 
 def _processar_payment(db: Session, payment_id: str) -> None:
@@ -69,22 +101,55 @@ def _processar_payment(db: Session, payment_id: str) -> None:
         logger.warning("Falha ao consultar payment %s: %s", payment_id, exc)
         return
 
-    assinatura = None
-    external_reference = payment.get("external_reference")
-    if external_reference:
-        assinatura = db.query(Assinatura).filter(Assinatura.id == int(external_reference)).first()
-
-    if assinatura is None:
-        preapproval_id = payment.get("preapproval_id")
-        if preapproval_id:
-            assinatura = db.query(Assinatura).filter(Assinatura.mp_subscription_id == preapproval_id).first()
-
+    assinatura = _assinatura_do_payment(db, payment)
     if assinatura is None:
         logger.warning("Payment %s sem assinatura correspondente", payment_id)
         return
 
     # None = notificação duplicada (o Mercado Pago reenvia o mesmo evento em retries, ou o
     # polling do PIX já tinha processado esse pagamento antes) — nada a fazer.
+    registrar_pagamento(db, assinatura, payment)
+
+
+def _processar_invoice(db: Session, invoice_id: str) -> None:
+    """Cobrança recorrente mensal (webhook `subscription_authorized_payment`). O recurso é
+    uma 'invoice' da preapproval; dela extraímos o pagamento real e reusamos
+    registrar_pagamento (idempotente por mp_payment_id)."""
+    try:
+        invoice = buscar_invoice(invoice_id)
+    except MercadoPagoError as exc:
+        # Alguns eventos `subscription_authorized_payment` trazem direto um payment_id.
+        logger.info("Invoice %s não encontrada, tentando como payment: %s", invoice_id, exc)
+        _processar_payment(db, invoice_id)
+        return
+
+    dados_pagamento = invoice.get("payment") or {}
+    payment_id = dados_pagamento.get("id")
+    if not payment_id:
+        logger.info("Invoice %s ainda sem pagamento associado", invoice_id)
+        return
+
+    # Busca o payment real (status/valor definitivos); se falhar, usa os dados da invoice.
+    try:
+        payment = buscar_payment(str(payment_id))
+    except MercadoPagoError:
+        payment = {
+            "id": payment_id,
+            "status": dados_pagamento.get("status"),
+            "transaction_amount": invoice.get("transaction_amount"),
+            "external_reference": invoice.get("external_reference"),
+            "preapproval_id": invoice.get("preapproval_id"),
+        }
+
+    assinatura = _assinatura_do_payment(db, payment)
+    if assinatura is None and invoice.get("preapproval_id"):
+        assinatura = (
+            db.query(Assinatura).filter(Assinatura.mp_subscription_id == str(invoice["preapproval_id"])).first()
+        )
+    if assinatura is None:
+        logger.warning("Invoice %s sem assinatura correspondente", invoice_id)
+        return
+
     registrar_pagamento(db, assinatura, payment)
 
 
@@ -111,6 +176,9 @@ async def webhook_mercadopago(request: Request, db: Session = Depends(get_db)) -
 
     if tipo == "subscription_preapproval":
         _processar_preapproval(db, str(recurso_id))
+    elif tipo == "subscription_authorized_payment":
+        # Cobrança recorrente mensal gerada pelo MP a partir da preapproval.
+        _processar_invoice(db, str(recurso_id))
     elif tipo == "payment":
         _processar_payment(db, str(recurso_id))
 

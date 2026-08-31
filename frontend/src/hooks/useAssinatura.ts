@@ -11,7 +11,11 @@ import type {
 export function usePlanosPublicos() {
   return useQuery({
     queryKey: ["planos-publicos"],
+    // Rota aberta (sem login) — usada também na tela de registro. Recarrega sozinho
+    // para refletir em "tempo real" planos que o admin criar/editar/desativar.
     queryFn: async () => (await clienteApi.get<PlanoPublico[]>("/planos/publicos")).data,
+    refetchInterval: 20000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -43,6 +47,18 @@ export function useCheckoutPix() {
   return useMutation({
     mutationFn: async (planoId: number) =>
       (await clienteApi.post<CheckoutPixResultado>("/assinaturas/checkout/pix", { plano_id: planoId })).data,
+  });
+}
+
+/** Ativa o teste grátis de um plano — sem cartão, sem pagamento. Só para conta nova. */
+export function useIniciarTeste() {
+  return useMutation({
+    mutationFn: async (planoId: number) =>
+      (
+        await clienteApi.post<{ status: string; data_expiracao: string | null }>("/assinaturas/iniciar-teste", {
+          plano_id: planoId,
+        })
+      ).data,
   });
 }
 

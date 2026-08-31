@@ -9,6 +9,7 @@ export interface Dashboard {
   total_series: number;
   total_episodios: number;
   assinaturas_ativas: number;
+  assinaturas_teste: number;
   assinaturas_atrasadas: number;
   novas_assinaturas_mes: number;
   receita_mes_centavos: number;

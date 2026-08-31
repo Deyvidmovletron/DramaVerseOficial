@@ -11,6 +11,7 @@ class ClienteOut(BaseModel):
     id: int
     nome: str
     email: str
+    telefone: str | None = None
     status: StatusCliente
     criado_em: datetime
 

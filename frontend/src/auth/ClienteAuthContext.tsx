@@ -14,14 +14,24 @@ export interface ClienteUser {
   id: number;
   nome: string;
   email: string;
+  telefone: string | null;
   status: "ativo" | "bloqueado";
   assinatura: AssinaturaResumo;
+}
+
+interface RegistroDados {
+  nome: string;
+  email: string;
+  telefone: string;
+  senha: string;
+  senha_confirmacao: string;
 }
 
 interface ClienteAuthContextValue {
   cliente: ClienteUser | null;
   isLoading: boolean;
   login: (email: string, senha: string) => Promise<void>;
+  registro: (dados: RegistroDados) => Promise<void>;
   logout: () => void;
   refetch: () => Promise<void>;
 }
@@ -66,6 +76,12 @@ export function ClienteAuthProvider({ children }: { children: ReactNode }) {
     await fetchMe();
   }
 
+  async function registro(dados: RegistroDados): Promise<void> {
+    const { data } = await clienteApi.post("/auth/cliente/registro", dados);
+    setAccessToken("cliente", data.access_token);
+    await fetchMe();
+  }
+
   function logout(): void {
     // Melhor-esforço: invalida a sessão no servidor (token_version + limpa o cookie), mas o
     // logout local acontece de qualquer forma, mesmo se a chamada falhar.
@@ -75,7 +91,7 @@ export function ClienteAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ClienteAuthContext.Provider value={{ cliente, isLoading, login, logout, refetch: fetchMe }}>
+    <ClienteAuthContext.Provider value={{ cliente, isLoading, login, registro, logout, refetch: fetchMe }}>
       {children}
     </ClienteAuthContext.Provider>
   );

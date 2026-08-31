@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     mercadopago_back_url: str = "http://localhost:5173/assinatura"
 
     first_admin_name: str = "Administrador"
-    first_admin_email: str = "admin@stream-mais.com"
+    first_admin_email: str = "admin@dramaverseoficial.com.br"
     first_admin_password: str = "troque-esta-senha"
 
     @property

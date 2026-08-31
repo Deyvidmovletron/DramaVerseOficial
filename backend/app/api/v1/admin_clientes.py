@@ -44,6 +44,7 @@ def _to_out(cliente: Cliente) -> ClienteAdminOut:
         id=cliente.id,
         nome=cliente.nome,
         email=cliente.email,
+        telefone=cliente.telefone,
         status=cliente.status,
         criado_em=cliente.criado_em,
         plano_atual_id=assinatura.plano_id if assinatura else None,
@@ -89,7 +90,11 @@ def criar_cliente(
     data: ClienteCreateIn, db: Session = Depends(get_db), _admin: Admin = Depends(get_current_admin)
 ) -> ClienteAdminOut:
     cliente = Cliente(
-        nome=data.nome, email=data.email, senha_hash=hash_password(data.senha), status=StatusCliente.ativo
+        nome=data.nome,
+        email=data.email,
+        telefone=data.telefone,
+        senha_hash=hash_password(data.senha),
+        status=StatusCliente.ativo,
     )
     db.add(cliente)
     try:
@@ -117,6 +122,7 @@ def atualizar_cliente(
         cliente.token_version += 1  # derruba sessões abertas na hora, não só no próximo login
     cliente.nome = data.nome
     cliente.email = data.email
+    cliente.telefone = data.telefone
     cliente.status = data.status
     try:
         db.commit()

@@ -63,8 +63,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Streaming API",
-    description="API da plataforma de streaming (estilo Netflix) com importação de playlists do YouTube e assinaturas via Mercado Pago.",
+    title="Drama Verse Oficial API",
+    description="API da plataforma Drama Verse Oficial (streaming de séries por assinatura) com importação de playlists do YouTube e assinaturas via Mercado Pago.",
     version="0.1.0",
     lifespan=lifespan,
 )

@@ -1,4 +1,4 @@
-# Plano do Projeto — Plataforma de Streaming (estilo Netflix)
+# Plano do Projeto — Drama Verse Oficial (plataforma de streaming, estilo Netflix)
 
 > Documento mestre de planejamento. Serve como referência única para todas as decisões de arquitetura, modelagem e funcionalidades. A implementação será feita **por partes**, sob comando explícito, seguindo as **Fases** descritas na Seção 8. Cada fase pode ser pedida pelo número (ex: "vamos para a Fase 3").
 
@@ -6,7 +6,7 @@
 
 ## 1. Visão Geral
 
-Sistema de streaming por assinatura, no estilo Netflix, com dois painéis:
+A **Drama Verse Oficial** é um sistema de streaming por assinatura, no estilo Netflix, com dois painéis:
 
 - **Painel Cliente**: catálogo de séries, player, acesso restrito por login/senha e por status de assinatura (paga/expirada).
 - **Painel Master (Admin)**: gestão total — clientes, planos/pacotes, séries, episódios, importação de conteúdo do YouTube, financeiro.

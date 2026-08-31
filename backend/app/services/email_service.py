@@ -18,7 +18,7 @@ def enviar_email(destinatario: str, assunto: str, corpo_texto: str) -> None:
 
     msg = EmailMessage()
     msg["Subject"] = assunto
-    msg["From"] = settings.smtp_from or settings.smtp_user or "no-reply@stream-mais.com"
+    msg["From"] = settings.smtp_from or settings.smtp_user or "no-reply@dramaverseoficial.com.br"
     msg["To"] = destinatario
     msg.set_content(corpo_texto)
 
