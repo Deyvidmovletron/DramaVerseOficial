@@ -30,13 +30,7 @@ services:
     # bloco continuar chamando `curl`, quebrando o healthcheck em silêncio).
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        # Chave pública do Mercado Pago — embutida no bundle estático em tempo de
-        # build (Vite), por isso vem como build arg em vez de env de runtime do
-        # container. Lida do .env na raiz do projeto (não o backend/.env).
-        VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY}
+    build: ./frontend
     restart: unless-stopped
     depends_on:
       - backend

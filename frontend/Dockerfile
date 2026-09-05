@@ -21,15 +21,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --no-audit --no-fund
 
-# Chave pública do Mercado Pago (não é secreta) — o Vite embute variáveis VITE_* no
-# bundle estático em tempo de BUILD, então precisa chegar como build-arg, não como
-# env de container (o nginx que serve o resultado não roda Node, não leria isso em
-# runtime). Declarado só agora (depois do npm install) pra não invalidar a camada
-# de deps toda vez que essa chave mudar. O access token privado do Mercado Pago
-# nunca passa perto do frontend — só existe no backend.
-ARG VITE_MERCADOPAGO_PUBLIC_KEY
-ENV VITE_MERCADOPAGO_PUBLIC_KEY=$VITE_MERCADOPAGO_PUBLIC_KEY
-
+# Sem build-arg da chave do Mercado Pago: o frontend busca a chave PÚBLICA em runtime
+# no backend (GET /api/v1/config), então ela é configurada só no backend-stack.yml
+# (MERCADOPAGO_PUBLIC_KEY), junto do access token — nada de Mercado Pago fica embutido
+# neste bundle. O access token privado nunca passa perto do frontend.
 COPY . .
 RUN npm run build
 

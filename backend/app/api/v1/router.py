@@ -7,6 +7,7 @@ from app.api.v1 import (
     auth,
     catalogo,
     categorias,
+    config,
     dashboard,
     episodios,
     importacao,
@@ -18,6 +19,7 @@ from app.api.v1 import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(config.router)
 api_router.include_router(categorias.router)
 api_router.include_router(series.router)
 api_router.include_router(temporadas.router)
