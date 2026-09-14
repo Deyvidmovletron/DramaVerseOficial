@@ -13,6 +13,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { isAxiosError } from "axios";
 import { type DragEvent, type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -30,6 +31,27 @@ import {
 import { useSerie } from "@/hooks/useSeries";
 import { useCreateTemporada, useDeleteTemporada, useTemporadas, useUpdateTemporada } from "@/hooks/useTemporadas";
 import type { Episodio, Temporada } from "@/types/admin";
+
+function mensagemErroUpload(erro: unknown): string {
+  if (!isAxiosError(erro)) return "Falha ao enviar este vídeo.";
+
+  // Requisição nunca chegou a ter resposta: conexão caiu, foi cancelada ou o
+  // servidor derrubou no meio do envio (ex: aba fechada, wifi/dados do
+  // usuário instável). Isso é o que mais bate com "deu erro sem mais detalhes".
+  if (!erro.response) {
+    return "Falha ao enviar: conexão perdida durante o envio. Verifique a internet e tente de novo.";
+  }
+
+  const { status, data } = erro.response;
+  if (status === 401) {
+    return "Sessão expirou durante o envio (arquivo grande + conexão lenta). Faça login de novo e tente novamente.";
+  }
+  if (status === 413) {
+    return "Arquivo muito grande para o servidor aceitar.";
+  }
+  const detail = typeof data === "object" && data && "detail" in data ? String((data as { detail: unknown }).detail) : null;
+  return detail || `Falha ao enviar este vídeo (erro ${status}).`;
+}
 
 function formatarDuracao(segundos: number | null): string {
   if (!segundos) return "-";
@@ -197,8 +219,8 @@ export function EpisodiosManager() {
           onProgress: (percent) => atualizarItemFila(item.id, { progresso: percent }),
         });
         atualizarItemFila(item.id, { status: "concluido", progresso: 100 });
-      } catch {
-        atualizarItemFila(item.id, { status: "erro", erro: "Falha ao enviar este vídeo." });
+      } catch (erro) {
+        atualizarItemFila(item.id, { status: "erro", erro: mensagemErroUpload(erro) });
       }
     }
     setEnviandoFila(false);
